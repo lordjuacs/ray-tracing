@@ -50,12 +50,12 @@ void Camara::renderizar(int size) {
         float centerZ = static_cast<float>(std::uniform_real_distribution<double>(-17.0, 17.0)(gen));
 
         // Radius
-        float rad = static_cast<float>(std::uniform_real_distribution<double>(1.0, 5)(gen));
+        float rad = static_cast<float>(std::uniform_real_distribution<double>(1.0, 4)(gen));
 
         // Color
-        int colorR = std::uniform_int_distribution<int>(0, 1)(gen);
-        int colorG = std::uniform_int_distribution<int>(0, 1)(gen);
-        int colorB = std::uniform_int_distribution<int>(0, 1)(gen);
+        float colorR = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
+        float colorG = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
+        float colorB = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
 
         //Constants
         float kdt = static_cast<float>(std::uniform_real_distribution<double>(0.0, 1.0)(gen));
@@ -70,7 +70,7 @@ void Camara::renderizar(int size) {
         sphere->n = nt;
         esferas.push_back(sphere);
     }
-
+    // fuente de luz (foco)
     Luz luz(vec3(30, 30, 30), vec3(1, 1, 1));
     vec3 color, normal, normal_temp;
     bool exists_obj;
@@ -96,46 +96,69 @@ void Camara::renderizar(int size) {
                     }
                 }
             }
+            //si no hay interseccion no alterar el color (negro)
             if (exists_obj) {
                 //color = closest->color;
-                //ya existe el punto de interseccion pi, el mas cercano a la camara
+                //ya existe el punto de interseccion pi con un objeto, el mas cercano a la camara
                 vec3 pi = rayo.ori + rayo.dir * t;
                 //vector L hacia la luz
                 vec3 L = luz.pos - pi;
+                double disL = L.modulo(); //distancia de pi hacia la fuente de luz
                 L.normalize();
 
-                float ka = 0.3; // constante de reflexion del ambiente
+                //revisar si hay sombra
+                bool exists_shadow = false;
+                float e = 0.005;
+                vec3 pis = pi + e * normal; // para que rayo de sombra no se choque con mismo objeto de donde sale
+                Rayo rs(pis, L);
+
+                //tomar el punto de interseccion mas cercano a la camara
+                for (auto esf: esferas) {
+                    if (esf->intersectar(rs, t_temp, normal_temp)) {
+                        if (t_temp <= disL) {
+                            exists_shadow = true;//rs choco con un objeto antes de llegar a la luz (foco)
+                            break;
+                        }
+                    }
+                }
+
+                float ka = 0.35; // constante de reflexion del ambiente
                 vec3 l_amb = vec3(1, 1, 1) * ka;
 
-                vec3 l_dif = vec3(0, 0, 0);
-                float f_dif = normal.punto(L);//no puede ser negativo ni cero
-                if (f_dif > 0)
-                    l_dif = luz.color * closest->kd * f_dif;
+                if (exists_shadow) {
+                    color = closest->color * l_amb;
+                } else {
+                    vec3 l_dif = vec3(0, 0, 0);
+                    float f_dif = normal.punto(L);//no puede ser negativo ni cero
+                    if (f_dif > 0)
+                        l_dif = luz.color * closest->kd * f_dif;
 
-                vec3 l_spec = vec3(0, 0, 0);
-                vec3 R = 2 * (L.punto(normal)) * normal - L;
-                R.normalize();
-                vec3 V = -rayo.dir; //hacia donde viene el rayo
-                V.normalize();
+                    vec3 l_spec = vec3(0, 0, 0);
+                    vec3 R = 2 * (L.punto(normal)) * normal - L;
+                    R.normalize();
+                    vec3 V = -rayo.dir; //hacia donde viene el rayo
+                    V.normalize();
 
-                float f_spec = R.punto(V); // no puede ser negativo ni cero
-                if (f_spec > 0)
-                    l_spec = luz.color * closest->ks * pow(f_spec, closest->n);
-                color = closest->color * (l_amb + l_dif + l_spec);
-                color.max_to_one();
+                    float f_spec = R.punto(V); // no puede ser negativo ni cero
+                    if (f_spec > 0)
+                        l_spec = luz.color * closest->ks * pow(f_spec, closest->n);
+                    color = closest->color * (l_amb + l_dif + l_spec);
+                    color.max_to_one();
+                }
+                (*pImg)(x, h - 1 - y, 0) = (BYTE) (color.x * 255);
+                (*pImg)(x, h - 1 - y, 1) = (BYTE) (color.y * 255);
+                (*pImg)(x, h - 1 - y, 2) = (BYTE) (color.z * 255);
             }
-            (*pImg)(x, h - 1 - y, 0) = (BYTE) (color.x * 255);
-            (*pImg)(x, h - 1 - y, 1) = (BYTE) (color.y * 255);
-            (*pImg)(x, h - 1 - y, 2) = (BYTE) (color.z * 255);
         }
     }
+
     dis_img.render((*pImg));
     dis_img.paint();
     string nombre_archivo = "imagen" + to_string(size) + "esferas.bmp";
     pImg->save(nombre_archivo.c_str());
-    /*while (!dis_img.is_closed()) {
-        dis_img.wait();
-    }*/
+/*while (!dis_img.is_closed()) {
+    dis_img.wait();
+}*/
 
 }
 

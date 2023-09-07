@@ -10,7 +10,7 @@ int main() {
                    vec3(0, 5, 50),
                    center,
                    up);
-    cam.renderizar(50);
+    cam.renderizar(100);
 
     return 0;
 }
