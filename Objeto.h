@@ -51,5 +51,28 @@ public:
     }
 };
 
+class Plano : public Objeto {
+public:
+    vec3 pnormal;
+    float d; //distancia al origen de coordenadas
+    float radio;
+
+    Plano(vec3 normal, float d_, vec3 col) : pnormal(normal), d(d_), Objeto(col) {
+        pnormal.normalize();
+    }
+
+    bool intersectar(Rayo ray, float &t, vec3 &normal) {
+        float den = ray.dir.punto(pnormal);
+        if (den != 0) {
+            vec3 p1 = pnormal * d; // punto en el plano
+            t = (p1 - ray.ori).punto(pnormal) / den;
+            if (t <= 0) return false; // or just t < 0
+            normal = pnormal;
+            return true;
+
+        }
+        return false;
+    }
+};
 
 #endif //CG2023_OBJETO_H
