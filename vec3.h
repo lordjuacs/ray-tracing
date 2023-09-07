@@ -42,6 +42,8 @@ public:
 
     vec3 operator-(vec3 v) { return vec3(x - v.x, y - v.y, z - v.z); }
 
+    bool operator==(vec3 v) { return (x == v.x) && (y == v.y) && (z == v.z); }
+
     vec3 operator-() { return vec3(-x, -y, -z); }
 
     vec3 operator*(float f) { return vec3(f * x, f * y, f * z); }

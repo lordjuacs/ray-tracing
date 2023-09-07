@@ -11,10 +11,16 @@
 class Objeto {
 public:
     vec3 color;
-    float kd = 1; //constante difusa del material [0,1]
-    float ks = 1; //constante especular del material [0,1]
+    float kd; //constante difusa del material [0,1]
+    float ks; //constante especular del material [0,1]
     float n; //shininess exponent
-    Objeto(vec3 col) : color{col} {}
+    Objeto(vec3 col, float kd = 1) : color{col}, kd{kd} {}
+
+    void setConstantes(float kd = 1, float ks = 1, float n = 8) {
+        this->kd = kd;
+        this->ks = ks;
+        this->n = n;
+    }
 
     virtual bool intersectar(Rayo ray, float &t, vec3 &normal) = 0;
 };
@@ -24,8 +30,7 @@ public:
     vec3 centro;
     float radio;
 
-    Esfera(vec3 cen, float r, vec3 col) :
-            centro{cen}, radio{r}, Objeto(col) {}
+    Esfera(vec3 cen, float r, vec3 col, float kd = 1) : centro{cen}, radio{r}, Objeto(col, kd) {}
 
     bool intersectar(Rayo ray, float &t, vec3 &normal) {
         vec3 d = ray.dir;
@@ -39,11 +44,10 @@ public:
         float t2 = (-b - sqrt(D)) / (2 * a);
         t = std::min(t1, t2);
         if (t <= 0) { return false; }
-        vec3 pi = ray.ori - t * ray.dir;
+        vec3 pi = ray.ori + t * ray.dir;
         normal = pi - centro;
         normal.normalize();
         return true;
-
     }
 };
 

@@ -8,5 +8,4 @@ add_executable(ray-tracing main.cpp
         vec3.cpp
         Rayo.cpp
         Objeto.cpp
-        Luz.cpp
-        Luz.h)
+        Luz.cpp)
