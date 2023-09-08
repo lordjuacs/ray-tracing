@@ -1,7 +1,15 @@
 #include <iostream>
 #include "Camara.h"
+#include <cstdlib> // Include this for atoi()
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <size>" << std::endl;
+        return 1;
+    }
+
+    int size = std::atoi(argv[1]); // Convert the first command-line argument to an integer
+
     vec3 center = vec3(0,0,0);
     vec3 up = vec3(0,1,0);
 
@@ -10,7 +18,8 @@ int main() {
                    vec3(0, 5, 50),
                    center,
                    up);
-    cam.renderizar(100);
+
+    cam.renderizar(size);
 
     return 0;
 }
