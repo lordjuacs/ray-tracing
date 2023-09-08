@@ -23,15 +23,18 @@ class Camara {
     int max_depth;
 
 public:
-    Camara() {max_depth = 3;}
+    Camara() {max_depth = 5;}
 
     void configurar(float _near, float fov, int ancho, int alto,
                     vec3 pos_eye, vec3 center, vec3 up);
 
     void renderizar(int size);
 
-    vec3 color_final(Rayo rayo, vector<Objeto *> objects, Luz*& luz, int depth);
+    vec3 color_final(Rayo rayo, vector<Objeto *> objects, Luz* luz, int depth);
 
+    vec3 refract(vec3 &I, vec3 &N, float &ior);
+
+    void fresnel(vec3 &I, vec3 &N, float &ior, float &kr);
 };
 
 

@@ -14,12 +14,21 @@ public:
     float kd; //constante difusa del material [0,1]
     float ks; //constante especular del material [0,1]
     float n; //shininess exponent
-    Objeto(vec3 col, float kd = 1) : color{col}, kd{kd} {}
+    float ke; // constante material espejo/reflexion [0,1>, nunca se refleja el 100%
+    bool transparency; // objeto es transparente o no
+    float ior; // index of refraction
+    Objeto(vec3 col, float kd = 1) : color{col}, kd{kd} {
+        init_constants(kd);
+    }
 
-    void setConstantes(float kd = 1, float ks = 1, float n = 10) {
-        this->kd = kd;
-        this->ks = ks;
-        this->n = n;
+    void
+    init_constants(float kd_ = 1, float ks_ = 1, float n_ = 10, float ke_ = 0, bool transparency_ = false, float ior_ = 1) {
+        this->kd = kd_;
+        this->ks = ks_;
+        this->n = n_;
+        this->ke = ke_;
+        this->transparency = transparency_;
+        this->ior = ior_;
     }
 
     virtual bool intersectar(Rayo ray, float &t, vec3 &normal) = 0;
@@ -63,8 +72,7 @@ public:
     bool intersectar(Rayo ray, float &t, vec3 &normal) override {
         float den = ray.dir.punto(pnormal);
         if (den != 0) {
-            vec3 p1 = pnormal *
-                      d; // punto en el plano, se halla multiplicando la normal del plano por la distancia al origen
+            vec3 p1 = pnormal * d; // punto en el plano
             t = (p1 - ray.ori).punto(pnormal) / den;
             if (t <= 0) return false; // or just t < 0????
             normal = pnormal; //
@@ -103,5 +111,49 @@ public:
     }
 };
 
+class Cilindro : public Objeto {
+public:
+    vec3 pa, pb;
+    float radio;
+
+    Cilindro(vec3 pa_, vec3 pb_, float rad, vec3 col, float kd = 1) : pa(pa_), pb(pb_), radio(rad), Objeto(col, kd) {}
+
+    bool intersectar(Rayo ray, float &t, vec3 &normal) override {
+        vec3 ro = ray.ori;
+        vec3 rd = ray.dir;
+        vec3 ba = pb - pa;
+        vec3 oc = ro - pa;
+
+        float baba = ba.punto(ba);
+        float bard = ba.punto(rd);
+        float baoc = ba.punto(oc);
+
+        float k2 = baba - bard * bard;
+        float k1 = baba * oc.punto(rd) - baoc * bard;
+        float k0 = baba * oc.punto(oc) - baoc * baoc - radio * radio * baba;
+
+        float h = k1 * k1 - k2 * k0;
+        if (h < 0.0) return false;
+        //body
+        h = sqrt(h);
+        t = (-k1 - h) / k2;
+        if (t <= 0) return false;
+        float y = baoc + t * bard;
+        if (y > 0.0 && y < baba) {
+            normal = (oc + t * rd - ba * y / baba) / radio;
+            normal.normalize();
+            return true;
+        }
+        // caps
+        t = (((y < 0.0) ? 0.0 : baba) - baoc) / bard;
+        if (abs(k1 + k2 * t) < h) {
+            normal = ba * sgn(y) / baba;
+            normal.normalize();
+            return true;
+        }
+        return false;
+
+    }
+};
 
 #endif //CG2023_OBJETO_H
