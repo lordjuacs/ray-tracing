@@ -17,18 +17,20 @@ public:
     float ke; // constante material espejo/reflexion [0,1>, nunca se refleja el 100%
     bool transparency; // objeto es transparente o no
     float ior; // index of refraction
+    bool light; // objeto es luz o no
     Objeto(vec3 col, float kd = 1) : color{col}, kd{kd} {
         init_constants(kd);
     }
 
     void
-    init_constants(float kd_ = 1, float ks_ = 1, float n_ = 10, float ke_ = 0, bool transparency_ = false, float ior_ = 1) {
+    init_constants(float kd_ = 1, float ks_ = 1, float n_ = 8, float ke_ = 0, bool transparency_ = false, float ior_ = 1, bool light_ = false) {
         this->kd = kd_;
         this->ks = ks_;
         this->n = n_;
         this->ke = ke_;
         this->transparency = transparency_;
         this->ior = ior_;
+        this->light = light_;
     }
 
     virtual bool intersectar(Rayo ray, float &t, vec3 &normal) = 0;
@@ -40,7 +42,6 @@ public:
     float radio;
 
     Esfera(vec3 cen, float r, vec3 col, float kd = 1) : centro{cen}, radio{r}, Objeto(col, kd) {}
-
     bool intersectar(Rayo ray, float &t, vec3 &normal) override {
         vec3 d = ray.dir;
         vec3 o = ray.ori;
@@ -65,7 +66,7 @@ public:
     vec3 pnormal;
     float d; //distancia al origen de coordenadas
 
-    Plano(vec3 normal, float d_, vec3 col) : pnormal(normal), d(d_), Objeto(col) {
+    Plano(vec3 normal, float d_, vec3 col) : pnormal(normal), d(0), Objeto(col) {
         pnormal.normalize();
     }
 
@@ -74,7 +75,7 @@ public:
         if (den != 0) {
             vec3 p1 = pnormal * d; // punto en el plano
             t = (p1 - ray.ori).punto(pnormal) / den;
-            if (t <= 0) return false; // or just t < 0????
+            if (t < 0) return false; // or just t < 0????
             normal = pnormal; //
             return true;
 
@@ -139,7 +140,7 @@ public:
         t = (-k1 - h) / k2;
         if (t <= 0) return false;
         float y = baoc + t * bard;
-        if (y > 0.0 && y < baba) {
+        if (y > 0.0 && y < baba && t > 0) {
             normal = (oc + t * rd - ba * y / baba) / radio;
             normal.normalize();
             return true;

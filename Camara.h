@@ -23,14 +23,16 @@ class Camara {
     int max_depth;
 
 public:
-    Camara() {max_depth = 5;}
+    Camara() { max_depth = 8; }
 
     void configurar(float _near, float fov, int ancho, int alto,
                     vec3 pos_eye, vec3 center, vec3 up);
 
     void renderizar(int size);
 
-    vec3 color_final(Rayo rayo, vector<Objeto *> objects, Luz* luz, int depth);
+    void renderizar(vector<Objeto *> &objects, Luz *&luz, int it);
+
+    vec3 color_final(Rayo rayo, vector<Objeto *> objects, Luz *luz, int depth);
 
     vec3 refract(vec3 &I, vec3 &N, float &ior);
 

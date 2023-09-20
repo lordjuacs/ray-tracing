@@ -32,31 +32,22 @@ void Camara::renderizar(int size) {
     pImg = new CImg<BYTE>(w, h, 1, 10);
     CImgDisplay dis_img((*pImg), "Imagen RayTracing en Perspectiva desde una Camara Pinhole");
 
-    /*Esfera esf(vec3(2, 0, 0), 8, vec3(0, 1, 0));
-    esf.kd = 0.75;
-    esf.ks = 0.8;
-    esf.n = 2;
-    */
     vector<Objeto *> objects;
     Objeto *sphere;
 
     std::random_device rd;
     std::mt19937 gen(rd()); // Mersenne Twister PRNG
-    int si_son_t = 0;
     for (int i = 0; i < size; ++i) {
         // Center coordinates
-        float centerX = static_cast<float>(std::uniform_real_distribution<double>(-17.0, 17.0)(gen));
-        float centerY = static_cast<float>(std::uniform_real_distribution<double>(-17.0, 17.0)(gen));
-        float centerZ = static_cast<float>(std::uniform_real_distribution<double>(-17.0, 17.0)(gen));
-
+        float centerX = static_cast<float>(std::uniform_real_distribution<double>(-15.0, 40.0)(gen));
+        float centerY = static_cast<float>(std::uniform_real_distribution<double>(5.0, 30.0)(gen)); // Adjusted range
+        float centerZ = static_cast<float>(std::uniform_real_distribution<double>(0, 20.0)(gen)); // Adjusted range
         // Radius
-        float rad = static_cast<float>(std::uniform_real_distribution<double>(1.0, 5)(gen));
-
+        float rad = static_cast<float>(std::uniform_real_distribution<double>(0.5, 5)(gen));
         // Color
         float colorR = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
         float colorG = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
         float colorB = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
-
         //Constants
         float kdt = static_cast<float>(std::uniform_real_distribution<double>(0.0, 1.0)(gen));
         float kst = static_cast<float>(std::uniform_real_distribution<double>(0.0, 1.0)(gen));
@@ -68,53 +59,26 @@ void Camara::renderizar(int size) {
         vec3 cen(centerX, centerY, centerZ);
         vec3 col(colorR, colorG, colorB);
         sphere = new Esfera(cen, rad, col);
-        sphere->init_constants(kdt, kst, nt, ket, transpt, iort);
+        sphere->init_constants(kdt, kst, nt, ket, false, 1);
 
         objects.push_back(sphere);
-        if(transpt) si_son_t++;
     }
-    //std::cout << "Transparentes: " << si_son_t;
-    Objeto *p1 = new Plano(vec3(0, 1, 0), 1, vec3(0.123, 0.456, 0.789));
+    Objeto *p1 = new Plano(vec3(1, 1, 0), 0, vec3(0.529, 0.807, 0.921));
     p1->init_constants(0.9, 0.1);
+    p1->ke = 0.3;
+    objects.emplace_back(p1);
+
+    p1 = new Plano(vec3(0, 1, 0), 0, vec3(0.4, 0.9, 0.2));
+    p1->init_constants(0.7, 0.6);
+    objects.emplace_back(p1);
     p1->ke = 0.1;
-    objects.emplace_back(p1);
-    /*float colorR = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
-    float colorG = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
-    float colorB = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
 
-    auto p1 = new Plano(vec3(0, 1, 0), 1, vec3(colorR, colorG, colorB));
-    p1->setConstantes(0.9, 0.1);
-    objects.emplace_back(p1);*/
-    /*Objeto *p1;
-    p1 = new Esfera(vec3(10, 0, 0), 8, vec3(0, 0, 1));
-    p1->init_constants(1, 0);
-    p1->ke = 1;
-    objects.emplace_back(p1);
-    p1 = new Esfera(vec3(10, 0, 20), 8, vec3(0.1, 0.1, 0.1));
-    p1->init_constants(0.8, 0.2);
-    p1->ke = 0.9;
-    p1->transparency = true;
-    p1->ior = 1.5;
-    objects.emplace_back(p1);
-    p1 = new Esfera(vec3(0, 10, 0), 8, vec3(0, 0, 0));
-    p1->init_constants(0.6, 0.4, 32);
-    p1->ke = 0.8;
-    p1->transparency = false;
-    p1->ior = 1.2;
-    objects.emplace_back(p1);
-
-    p1 = new Plano(vec3(0, 1, 0), 1, vec3(0.123, 0.456, 0.789));
-    p1->init_constants(0.9, 0.1);
-    p1->ke = 0.1;
-    objects.emplace_back(p1);
-
-    p1 = new Cilindro(vec3(-20, 0, 0), vec3(-10, 10, 0), 5, vec3(0, 1, 1));
+    p1 = new Cilindro(vec3(-15, 30, 5), vec3(-5, 50, 5), 5, vec3(0.9, 0.8, 0.6));
     p1->init_constants(0.7, 0.3, 8);
+    p1->ke = 0.4;
+
     objects.emplace_back(p1);
     vector<Luz *> luces;
-    //Luz luz(vec3(30,30,30), vec3(1,1,1));
-    //luces.emplace_back(&luz);
-    */
     // fuente de luz (foco)
     Luz *luz = new Luz(vec3(30, 30, 30), vec3(1, 1, 1));
     vec3 color;
@@ -134,9 +98,37 @@ void Camara::renderizar(int size) {
     dis_img.paint();
     string nombre_archivo = "imagen" + to_string(size) + "esferas.bmp";
     pImg->save(nombre_archivo.c_str());
-/*while (!dis_img.is_closed()) {
-    dis_img.wait();
-}*/
+    /*while (!dis_img.is_closed()) {
+        dis_img.wait();
+    }*/
+}
+
+void Camara::renderizar(vector<Objeto *> &objects, Luz *&luz, int it) {
+    Rayo rayo;
+    rayo.ori = eye;
+    vec3 dir, color;
+
+    pImg = new CImg<BYTE>(w, h, 1, 10);
+    CImgDisplay dis_img((*pImg), "Imagen RayTracing en Perspectiva desde una Camara Pinhole");
+
+    for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) {
+            dir = ze * (-f) + ye * a * (y / h - 0.5) + xe * b * (x / w - 0.5);
+            dir.normalize();
+            rayo.dir = dir;
+            color = color_final(rayo, objects, luz, 0); //recursividad color final
+            (*pImg)(x, h - 1 - y, 0) = (BYTE) (color.x * 255);
+            (*pImg)(x, h - 1 - y, 1) = (BYTE) (color.y * 255);
+            (*pImg)(x, h - 1 - y, 2) = (BYTE) (color.z * 255);
+        }
+    }
+    dis_img.render((*pImg));
+    dis_img.paint();
+    string nombre_archivo = "imagen" + to_string(it) + "esferas.bmp";
+    pImg->save(nombre_archivo.c_str());
+    /*while (!dis_img.is_closed()) {
+        dis_img.wait();
+    }*/
 }
 
 vec3 Camara::color_final(Rayo rayo, vector<Objeto *> objects, Luz *luz, int depth) {
@@ -160,6 +152,8 @@ vec3 Camara::color_final(Rayo rayo, vector<Objeto *> objects, Luz *luz, int dept
         //color = closest->color;
         //ya existe el punto de interseccion pi con un objeto, el mas cercano a la camara
         vec3 pi = rayo.ori + rayo.dir * t;
+        vec3 V = -rayo.dir; //hacia donde viene el rayo
+
         //vector L hacia la luz
         vec3 L = luz->pos - pi;
         double disL = L.modulo(); //distancia de pi hacia la fuente de luz
@@ -173,8 +167,8 @@ vec3 Camara::color_final(Rayo rayo, vector<Objeto *> objects, Luz *luz, int dept
 
         //tomar el punto de interseccion mas cercano a la camara
         for (auto obj: objects) {
-            if (obj->intersectar(rs, t_temp, normal_temp)) {
-                if (t_temp <= disL) {
+            if (obj->intersectar(rs, t_temp, normal_temp) && !obj->light) {// sombra si es transparente??
+                if (t_temp < disL) {
                     exists_shadow = true;//rs choco con un objeto antes de llegar a la luz (foco)
                     break;
                 }
@@ -184,8 +178,10 @@ vec3 Camara::color_final(Rayo rayo, vector<Objeto *> objects, Luz *luz, int dept
         float ka = 0.2; // constante de reflexion del ambiente
         vec3 l_amb = vec3(1, 1, 1) * ka;
 
-        if (exists_shadow)
+        if (exists_shadow) {
             color = closest->color * l_amb;
+            //color = closest->color * prom (lamb1 + lamb2 + lamb3
+        }
         else {
             //luz difusa
             vec3 l_dif = vec3(0, 0, 0);
@@ -196,15 +192,18 @@ vec3 Camara::color_final(Rayo rayo, vector<Objeto *> objects, Luz *luz, int dept
             vec3 l_spec = vec3(0, 0, 0);
             vec3 R = 2 * (L.punto(normal)) * normal - L;
             R.normalize();
-            vec3 V = -rayo.dir; //hacia donde viene el rayo
+            //vec3 V = -rayo.dir; //hacia donde viene el rayo
             V.normalize();
             float f_spec = R.punto(V); // no puede ser negativo ni cero
             if (f_spec > 0)
                 l_spec = luz->color * closest->ks * pow(f_spec, closest->n);
             //luz total
             color = closest->color * (l_amb + l_dif + l_spec);
-            //revisar si objeto es transparente
-            if (closest->transparency) {
+            color.max_to_one();
+        }
+        //revisar si objeto es transparente
+        if (closest->transparency) {
+            if(depth + 1 < max_depth) {
                 vec3 color_refraction(0, 0, 0);
                 float kr;
                 fresnel(rayo.dir, normal, closest->ior, kr);
@@ -226,21 +225,22 @@ vec3 Camara::color_final(Rayo rayo, vector<Objeto *> objects, Luz *luz, int dept
 
                 //mix the two
                 color = color + color_reflection * kr + color_refraction * (1 - kr);
-            } else {// no es transparente
-                //recursividad, espejo de colores hasta la profundidad maxima
-                if (closest->ke > 0 && depth + 1 < max_depth) {
-                    // reflection
-                    Rayo rr;
-                    rr.ori = pi + e * normal;
-                    rr.dir = 2 * (V.punto(normal)) * normal - V;
-                    rr.dir.normalize();
-                    vec3 color_reflection = color_final(rr, objects, luz, depth + 1);
-                    color = color + closest->ke * color_reflection;//casi nunca se refleja el 100%
-                }
             }
-            color.max_to_one();
+        } else {// no es transparente
+            //recursividad, espejo de colores hasta la profundidad maxima
+            if (closest->ke > 0 && depth + 1 < max_depth) {
+                // reflection
+                Rayo rr;
+                rr.ori = pi + e * normal;
+                rr.dir = 2 * (V.punto(normal)) * normal - V;
+                rr.dir.normalize();
+                vec3 color_reflection = color_final(rr, objects, luz, depth + 1);
+                color = color + closest->ke * color_reflection;//casi nunca se refleja el 100%
+            }
         }
+
     }
+    color.max_to_one();
     return color;
 }
 
@@ -277,3 +277,5 @@ void Camara::fresnel(vec3 &I, vec3 &N, float &ior, float &kr) {
     // As a consequence of the conservation of energy, the transmittance is given by:
     // kt = 1 - kr;
 }
+
+
