@@ -30,9 +30,9 @@ public:
 
     void renderizar(int size);
 
-    void renderizar(vector<Objeto *> &objects, Luz *&luz, int it);
+    void renderizar(vector<Objeto *> &objects, vector<Luz *>&luces, int it);
 
-    vec3 color_final(Rayo rayo, vector<Objeto *> objects, Luz *luz, int depth);
+    vec3 color_final(Rayo &rayo, vector<Objeto *> &objects, vector<Luz *>&luces, int depth);
 
     vec3 refract(vec3 &I, vec3 &N, float &ior);
 

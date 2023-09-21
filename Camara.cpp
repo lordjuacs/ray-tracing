@@ -6,6 +6,7 @@
 #include "Luz.h"
 #include <vector>
 #include <random>
+#include <fstream>
 
 using namespace std;
 
@@ -82,13 +83,13 @@ void Camara::renderizar(int size) {
     // fuente de luz (foco)
     Luz *luz = new Luz(vec3(30, 30, 30), vec3(1, 1, 1));
     vec3 color;
-
+    luces.emplace_back(luz);
     for (int x = 0; x < w; x++) {
         for (int y = 0; y < h; y++) {
             dir = ze * (-f) + ye * a * (y / h - 0.5) + xe * b * (x / w - 0.5);
             dir.normalize();
             rayo.dir = dir;
-            color = color_final(rayo, objects, luz, 0);//recursividad color final
+            color = color_final(rayo, objects, luces, 0);//recursividad color final
             (*pImg)(x, h - 1 - y, 0) = (BYTE) (color.x * 255);
             (*pImg)(x, h - 1 - y, 1) = (BYTE) (color.y * 255);
             (*pImg)(x, h - 1 - y, 2) = (BYTE) (color.z * 255);
@@ -103,41 +104,49 @@ void Camara::renderizar(int size) {
     }*/
 }
 
-void Camara::renderizar(vector<Objeto *> &objects, Luz *&luz, int it) {
+void Camara::renderizar(vector<Objeto *> &objects, vector<Luz *> &luces, int it) {
     Rayo rayo;
     rayo.ori = eye;
-    vec3 dir, color;
-
+    vec3 dir, color(0, 0, 0);
     pImg = new CImg<BYTE>(w, h, 1, 10);
     CImgDisplay dis_img((*pImg), "Imagen RayTracing en Perspectiva desde una Camara Pinhole");
-
     for (int x = 0; x < w; x++) {
         for (int y = 0; y < h; y++) {
             dir = ze * (-f) + ye * a * (y / h - 0.5) + xe * b * (x / w - 0.5);
             dir.normalize();
             rayo.dir = dir;
-            color = color_final(rayo, objects, luz, 0); //recursividad color final
+
+
+            color = color_final(rayo, objects, luces, 0); //recursividad color final
+
+
             (*pImg)(x, h - 1 - y, 0) = (BYTE) (color.x * 255);
             (*pImg)(x, h - 1 - y, 1) = (BYTE) (color.y * 255);
             (*pImg)(x, h - 1 - y, 2) = (BYTE) (color.z * 255);
+
+
         }
     }
     dis_img.render((*pImg));
     dis_img.paint();
-    string nombre_archivo = "imagen" + to_string(it) + "esferas.bmp";
+    string nombre_archivo = "imagen" + to_string(it) + "AVER.bmp";
     pImg->save(nombre_archivo.c_str());
     /*while (!dis_img.is_closed()) {
         dis_img.wait();
     }*/
 }
 
-vec3 Camara::color_final(Rayo rayo, vector<Objeto *> objects, Luz *luz, int depth) {
+vec3 Camara::color_final(Rayo &rayo, vector<Objeto *> &objects, vector<Luz *> &luces, int depth) {
     vec3 color(0, 0, 0), normal, normal_temp;
     bool exists_obj = false;
     float t = FLT_MAX, t_temp;
+    float e = 0.0005;
+
     Objeto *closest;
     //tomar el punto de interseccion mas cercano a la camara
-    for (auto obj: objects) {
+    //int light_objects = 0;
+    for (auto &obj: objects) {
+        // if (obj->light)light_objects++;
         if (obj->intersectar(rayo, t_temp, normal_temp)) {
             exists_obj = true;
             if (t_temp < t) {
@@ -147,63 +156,67 @@ vec3 Camara::color_final(Rayo rayo, vector<Objeto *> objects, Luz *luz, int dept
             }
         }
     }
+    vec3 l_dif = vec3(0, 0, 0);
+    vec3 l_spec = vec3(0, 0, 0);
+
     //si no hay interseccion no alterar el color (negro)
-    if (exists_obj) {
+    if (exists_obj && closest->light) {
+        color = closest->color;
+    } else if (exists_obj) {
         //color = closest->color;
         //ya existe el punto de interseccion pi con un objeto, el mas cercano a la camara
         vec3 pi = rayo.ori + rayo.dir * t;
         vec3 V = -rayo.dir; //hacia donde viene el rayo
-
-        //vector L hacia la luz
-        vec3 L = luz->pos - pi;
-        double disL = L.modulo(); //distancia de pi hacia la fuente de luz
-        L.normalize();
-
-        //revisar si hay sombra
-        bool exists_shadow = false;
-        float e = 0.0005;
-        vec3 pis = pi + e * normal; // para que rayo de sombra no se choque con mismo objeto de donde sale
-        Rayo rs(pis, L);
-
-        //tomar el punto de interseccion mas cercano a la camara
-        for (auto obj: objects) {
-            if (obj->intersectar(rs, t_temp, normal_temp) && !obj->light) {// sombra si es transparente??
-                if (t_temp < disL) {
-                    exists_shadow = true;//rs choco con un objeto antes de llegar a la luz (foco)
-                    break;
-                }
-            }
-        }
-
         float ka = 0.2; // constante de reflexion del ambiente
         vec3 l_amb = vec3(1, 1, 1) * ka;
+        for (auto &luz: luces) {// se va a computar para cada luz que exista
+            //vector L hacia la luz
+            vec3 L = luz->pos - pi;
+            double disL = L.modulo(); //distancia de pi hacia la fuente de luz
+            L.normalize();
 
-        if (exists_shadow) {
-            color = closest->color * l_amb;
-            //color = closest->color * prom (lamb1 + lamb2 + lamb3
+            //revisar si hay sombra
+            bool exists_shadow = false;
+            vec3 pis = pi + e * normal; // para que rayo de sombra no se choque con mismo objeto de donde sale
+            Rayo rs(pis, L);
+
+            //tomar el punto de interseccion mas cercano a la camara
+            for (auto &obj: objects) {
+                if (!obj->light && obj->intersectar(rs, t_temp, normal_temp)) {// sombra si es transparente??
+                    if (t_temp < disL) {
+                        exists_shadow = true;//rs choco con un objeto antes de llegar a la luz (foco)
+                        break;
+                    }
+                }
+            }
+
+            //para cada fuente de luz, difusa y especular, y hacer promedio de todas
+            if (exists_shadow) {
+                //color = color + closest->color * l_amb;
+                //color = closest->color * prom (lamb1 + lamb2 + lamb3
+                //cout << "shadow";
+            } else {
+                //luz difusa
+                float f_dif = normal.punto(L);//no puede ser negativo ni cero
+                if (f_dif > 0)//no puede ser negativo ni 0
+                    l_dif = l_dif + luz->color * closest->kd * f_dif;
+                //luz especular
+                vec3 R = 2 * (L.punto(normal)) * normal - L;
+                R.normalize();
+                //vec3 V = -rayo.dir; //hacia donde viene el rayo
+                V.normalize();
+                float f_spec = R.punto(V); // no puede ser negativo ni cero
+                if (f_spec > 0)
+                    l_spec = l_spec + luz->color * closest->ks * pow(f_spec, closest->n);
+            }
         }
-        else {
-            //luz difusa
-            vec3 l_dif = vec3(0, 0, 0);
-            float f_dif = normal.punto(L);//no puede ser negativo ni cero
-            if (f_dif > 0)//no puede ser negativo ni 0
-                l_dif = luz->color * closest->kd * f_dif;
-            //luz especular
-            vec3 l_spec = vec3(0, 0, 0);
-            vec3 R = 2 * (L.punto(normal)) * normal - L;
-            R.normalize();
-            //vec3 V = -rayo.dir; //hacia donde viene el rayo
-            V.normalize();
-            float f_spec = R.punto(V); // no puede ser negativo ni cero
-            if (f_spec > 0)
-                l_spec = luz->color * closest->ks * pow(f_spec, closest->n);
-            //luz total
-            color = closest->color * (l_amb + l_dif + l_spec);
-            color.max_to_one();
-        }
+        //luz total
+        color = color + closest->color * (l_amb + l_dif/luces.size() + l_spec/luces.size());
+        //color.max_to_one();
+
         //revisar si objeto es transparente
         if (closest->transparency) {
-            if(depth + 1 < max_depth) {
+            if (depth + 1 < max_depth) {
                 vec3 color_refraction(0, 0, 0);
                 float kr;
                 fresnel(rayo.dir, normal, closest->ior, kr);
@@ -215,29 +228,32 @@ vec3 Camara::color_final(Rayo rayo, vector<Objeto *> objects, Luz *luz, int dept
                     refraction_dir.normalize();
                     vec3 refraction_ori = outside ? pi - bias : pi + bias;
                     Rayo refraction_ray(refraction_ori, refraction_dir);
-                    color_refraction = color_final(refraction_ray, objects, luz, depth + 1);
+                    color_refraction = color_final(refraction_ray, objects, luces, depth + 1);
                 }
                 vec3 reflection_dir = 2 * (V.punto(normal)) * normal - V;//reflect(dir, normal).normalize();
                 reflection_dir.normalize();
                 vec3 reflection_ori = outside ? pi + bias : pi - bias;
                 Rayo reflection_ray(reflection_ori, reflection_dir);
-                vec3 color_reflection = color_final(reflection_ray, objects, luz, depth + 1);
+                vec3 color_reflection = color_final(reflection_ray, objects, luces, depth + 1);
 
                 //mix the two
                 color = color + color_reflection * kr + color_refraction * (1 - kr);
             }
         } else {// no es transparente
+
             //recursividad, espejo de colores hasta la profundidad maxima
             if (closest->ke > 0 && depth + 1 < max_depth) {
                 // reflection
+
                 Rayo rr;
                 rr.ori = pi + e * normal;
                 rr.dir = 2 * (V.punto(normal)) * normal - V;
                 rr.dir.normalize();
-                vec3 color_reflection = color_final(rr, objects, luz, depth + 1);
+                vec3 color_reflection = color_final(rr, objects, luces, depth + 1);
                 color = color + closest->ke * color_reflection;//casi nunca se refleja el 100%
             }
         }
+
 
     }
     color.max_to_one();
