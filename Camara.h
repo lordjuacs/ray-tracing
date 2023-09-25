@@ -28,8 +28,6 @@ public:
     void configurar(float _near, float fov, int ancho, int alto,
                     vec3 pos_eye, vec3 center, vec3 up);
 
-    void renderizar(int size);
-
     void renderizar(vector<Objeto *> &objects, vector<Luz *>&luces, int it);
 
     vec3 color_final(Rayo &rayo, vector<Objeto *> &objects, vector<Luz *>&luces, int depth);

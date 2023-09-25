@@ -5,9 +5,6 @@
 #include "Camara.h"
 #include "Luz.h"
 #include <vector>
-#include <random>
-#include <fstream>
-
 using namespace std;
 
 void Camara::configurar(float _near, float fov, int ancho, int alto,
@@ -25,84 +22,6 @@ void Camara::configurar(float _near, float fov, int ancho, int alto,
     ye = ze.cruz(xe);
 }
 
-void Camara::renderizar(int size) {
-    Rayo rayo;
-    rayo.ori = eye;
-    vec3 dir;
-
-    pImg = new CImg<BYTE>(w, h, 1, 10);
-    CImgDisplay dis_img((*pImg), "Imagen RayTracing en Perspectiva desde una Camara Pinhole");
-
-    vector<Objeto *> objects;
-    Objeto *sphere;
-
-    std::random_device rd;
-    std::mt19937 gen(rd()); // Mersenne Twister PRNG
-    for (int i = 0; i < size; ++i) {
-        // Center coordinates
-        float centerX = static_cast<float>(std::uniform_real_distribution<double>(-15.0, 40.0)(gen));
-        float centerY = static_cast<float>(std::uniform_real_distribution<double>(5.0, 30.0)(gen)); // Adjusted range
-        float centerZ = static_cast<float>(std::uniform_real_distribution<double>(0, 20.0)(gen)); // Adjusted range
-        // Radius
-        float rad = static_cast<float>(std::uniform_real_distribution<double>(0.5, 5)(gen));
-        // Color
-        float colorR = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
-        float colorG = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
-        float colorB = static_cast<float>(std::uniform_real_distribution<double>(0.1, 1.0)(gen));
-        //Constants
-        float kdt = static_cast<float>(std::uniform_real_distribution<double>(0.0, 1.0)(gen));
-        float kst = static_cast<float>(std::uniform_real_distribution<double>(0.0, 1.0)(gen));
-        int nt = std::uniform_int_distribution<int>(0, 40)(gen);
-        float ket = static_cast<float>(std::uniform_real_distribution<double>(0.0, 1.0)(gen));
-        bool transpt = std::uniform_int_distribution<int>(0, 1)(gen);
-        float iort = static_cast<float>(std::uniform_real_distribution<double>(0.0, 1.0)(gen));
-
-        vec3 cen(centerX, centerY, centerZ);
-        vec3 col(colorR, colorG, colorB);
-        sphere = new Esfera(cen, rad, col);
-        sphere->init_constants(kdt, kst, nt, ket, false, 1);
-
-        objects.push_back(sphere);
-    }
-    Objeto *p1 = new Plano(vec3(1, 1, 0), 0, vec3(0.529, 0.807, 0.921));
-    p1->init_constants(0.9, 0.1);
-    p1->ke = 0.3;
-    objects.emplace_back(p1);
-
-    p1 = new Plano(vec3(0, 1, 0), 0, vec3(0.4, 0.9, 0.2));
-    p1->init_constants(0.7, 0.6);
-    objects.emplace_back(p1);
-    p1->ke = 0.1;
-
-    p1 = new Cilindro(vec3(-15, 30, 5), vec3(-5, 50, 5), 5, vec3(0.9, 0.8, 0.6));
-    p1->init_constants(0.7, 0.3, 8);
-    p1->ke = 0.4;
-
-    objects.emplace_back(p1);
-    vector<Luz *> luces;
-    // fuente de luz (foco)
-    Luz *luz = new Luz(vec3(30, 30, 30), vec3(1, 1, 1));
-    vec3 color;
-    luces.emplace_back(luz);
-    for (int x = 0; x < w; x++) {
-        for (int y = 0; y < h; y++) {
-            dir = ze * (-f) + ye * a * (y / h - 0.5) + xe * b * (x / w - 0.5);
-            dir.normalize();
-            rayo.dir = dir;
-            color = color_final(rayo, objects, luces, 0);//recursividad color final
-            (*pImg)(x, h - 1 - y, 0) = (BYTE) (color.x * 255);
-            (*pImg)(x, h - 1 - y, 1) = (BYTE) (color.y * 255);
-            (*pImg)(x, h - 1 - y, 2) = (BYTE) (color.z * 255);
-        }
-    }
-    dis_img.render((*pImg));
-    dis_img.paint();
-    string nombre_archivo = "imagen" + to_string(size) + "esferas.bmp";
-    pImg->save(nombre_archivo.c_str());
-    /*while (!dis_img.is_closed()) {
-        dis_img.wait();
-    }*/
-}
 
 void Camara::renderizar(vector<Objeto *> &objects, vector<Luz *> &luces, int it) {
     Rayo rayo;
@@ -182,7 +101,7 @@ vec3 Camara::color_final(Rayo &rayo, vector<Objeto *> &objects, vector<Luz *> &l
 
             //tomar el punto de interseccion mas cercano a la camara
             for (auto &obj: objects) {
-                if (!obj->light && obj->intersectar(rs, t_temp, normal_temp)) {// sombra si es transparente??
+                if (!obj->light && obj->intersectar(rs, t_temp, normal_temp) && !obj->transparency) {// sombra si es transparente??
                     if (t_temp < disL) {
                         exists_shadow = true;//rs choco con un objeto antes de llegar a la luz (foco)
                         break;
