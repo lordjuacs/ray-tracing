@@ -46,8 +46,8 @@ void Camara::renderizar(vector<Objeto *> &objects, vector<Luz *> &luces, int it)
 
         }
     }
-    dis_img.render((*pImg));
-    dis_img.paint();
+    //dis_img.render((*pImg));
+    //dis_img.paint();
     string nombre_archivo = "imagen" + to_string(it) + "AVER.bmp";
     pImg->save(nombre_archivo.c_str());
     /*while (!dis_img.is_closed()) {
