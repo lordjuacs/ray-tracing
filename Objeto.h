@@ -160,5 +160,4 @@ public:
     }
 };
 
-
 #endif //CG2023_OBJETO_H
