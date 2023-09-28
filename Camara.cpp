@@ -28,7 +28,7 @@ void Camara::renderizar(vector<Objeto *> &objects, vector<Luz *> &luces, int it)
     rayo.ori = eye;
     vec3 dir, color(0, 0, 0);
     pImg = new CImg<BYTE>(w, h, 1, 10);
-    CImgDisplay dis_img((*pImg), "Imagen RayTracing en Perspectiva desde una Camara Pinhole");
+    //CImgDisplay dis_img((*pImg), "Imagen RayTracing en Perspectiva desde una Camara Pinhole");
     for (int x = 0; x < w; x++) {
         for (int y = 0; y < h; y++) {
             dir = ze * (-f) + ye * a * (y / h - 0.5) + xe * b * (x / w - 0.5);
@@ -48,7 +48,7 @@ void Camara::renderizar(vector<Objeto *> &objects, vector<Luz *> &luces, int it)
     }
     //dis_img.render((*pImg));
     //dis_img.paint();
-    string nombre_archivo = "imagen" + to_string(it) + "AVER.bmp";
+    string nombre_archivo = "imagen" + to_string(it) + ".bmp";
     pImg->save(nombre_archivo.c_str());
     /*while (!dis_img.is_closed()) {
         dis_img.wait();

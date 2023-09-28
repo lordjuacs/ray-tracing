@@ -1,9 +1,7 @@
-#include <cstdlib> // Include this for atoi()
 #include <iostream>
 #include <random>
 #include "Camara.h"
 #include <chrono>
-
 
 struct Firefly {
     Objeto *esfera;
@@ -18,20 +16,19 @@ struct Firefly {
 };
 
 void basica() {
-    //Plano, transparente, color morado
+    //Plano, espejo, color morado
     Objeto *plano = new Plano(vec3(0, 1, 0), 1, vec3(0.396, 0.255, 0.522));
     plano->init_constants(0.9, 0.1, 12, 0.3);
 
     //Botella
-    float radio_botella = 80;
+    float radio_botella = 50;
     Objeto *cil1 = new Cilindro(vec3(0, 0, 0), vec3(0, 90, 0), radio_botella, vec3(1, 1, 1));
     cil1->init_constants(0.7, 0.3, 20, 0.8, true, 2);
     Objeto *cil2 = new Cilindro(vec3(0, 90, 0), vec3(0, 110, 0), 30, vec3(0.5, 0.5, 0.5));
     cil2->init_constants(0.7, 0.3, 20);
     Objeto *cil3 = new Cilindro(vec3(-150, 20, -100), vec3(-170, 50, -140), 40, vec3(0.94, 0.14, 0.8));
     cil3->init_constants(0.7, 0.3, 20);
-    Objeto *cil4 = new Cilindro(vec3(-100, 50, 200), vec3(-120, 120, 150), 50, vec3(0.66, 0.35, 0.54));
-    cil4->init_constants(0.8, 0.9, 8);
+
 
     //Esferas
     Objeto *esf1 = new Esfera(vec3(0, 30, 150), 15, vec3(0.78, 0.39,0.9)); // lila +z
@@ -55,7 +52,6 @@ void basica() {
     objetos.emplace_back(cil1);
     objetos.emplace_back(cil2);
     objetos.emplace_back(cil3);
-    objetos.emplace_back(cil4);
     objetos.emplace_back(esf1);
     objetos.emplace_back(esf2);
     objetos.emplace_back(esf3);
@@ -78,7 +74,7 @@ void basica() {
     float max_px = 2 * M_PI;
     float min_pz = 0.0;
     float max_pz = 2 * M_PI;
-    float min_R = 30;
+    float min_R = 10;
     float max_R = radio_botella - 20 - 10;
     float min_circle_center_x = 5;
     float max_circle_center_x = 20;
@@ -97,7 +93,7 @@ void basica() {
     Objeto *firefly;
     Luz *fireflyLight;
     vector<Firefly> luciernagas;
-    int total_fireflies = 15;
+    int total_fireflies = 5;
     float fx;
     float fz;
     float px;
@@ -105,7 +101,7 @@ void basica() {
     float R;
     float circle_center_x;
     float circle_center_z;
-    for (int i = 0, vertical = 10; i < total_fireflies; vertical += 5, ++i) {
+    for (int i = 0, vertical = 25; i < total_fireflies; vertical += 15, ++i) {
         firefly = new Esfera(vec3(0, vertical, 0), 3, colLuz);
         firefly->light = true;
         fireflyLight = new Luz(vec3(0, vertical, 0), colLuz);
@@ -124,20 +120,21 @@ void basica() {
         luciernagas.emplace_back(luciernaga);
     }
 
-    const int numFrames = 50;
+    const int numFrames = 300;
 
 
     Camara cam;
 
     float posX = 150;
-    float posY = 100;
+    float posY = 120
+
+            ;
     float posZ = 50;
     vec3 center = vec3(0, 0, 0);
     int posYDirection = 1; // 1 for up, -1 for down
     float posYIncrement = 1.0f; // Change in posY per iteration
     auto start = std::chrono::high_resolution_clock::now();
-
-    float rotationSpeed = 0.09;
+    float rotationSpeed = 1.5;
     for (int frame = 0; frame < numFrames; ++frame) {
 
         for (auto luciernaga: luciernagas) {
@@ -191,6 +188,7 @@ void basica() {
 
 
 }
+
 
 int main() {
     basica();
